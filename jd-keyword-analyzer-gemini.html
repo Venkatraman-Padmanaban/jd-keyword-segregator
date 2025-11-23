@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI-Powered JD Keyword Segregator (Gemini)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px 16px 40px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #e0f2fe 0, #f9fafb 45%, #e5e7eb 100%);
+      color: #111827;
+    }
+
+    .app {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 0.03em;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr);
+      gap: 16px;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        align-items: start;
+      }
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 18px;
+      padding: 18px 18px 20px;
+      box-shadow: 0 18px 35px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(15, 23, 42, 0.04);
+      backdrop-filter: blur(12px);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .fields {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 3px;
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      padding: 9px 11px;
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+      background: #f9fafb;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16);
+      background: #ffffff;
+    }
+
+    .field textarea {
+      min-height: 180px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 3px;
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.1s;
+    }
+
+    .btn span.dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 25px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.65;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: #111827;
+      border: 1px solid #d1d5db;
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+    }
+
+    .status {
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .status.error {
+      color: #b91c1c;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    pre#output {
+      margin: 0;
+      padding: 10px 11px 12px;
+      border-radius: 12px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      max-height: 520px;
+      overflow: auto;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .tagline {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>AI-Powered JD Keyword Segregator (Gemini)</h1>
+      <p>Paste multiple job descriptions and let AI group recurring skills & keywords by category with counts.</p>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Inputs -->
+      <section class="card">
+        <h2>Input</h2>
+        <div class="fields">
+          <div class="field">
+            <label for="apiKey">Gemini API Key</label>
+            <input type="password" id="apiKey" placeholder="AIza…" />
+            <div class="hint">
+              Your key is only used in this tab. Don’t share or hard-code it.
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="jobRole">Job Profile you are targeting</label>
+            <input id="jobRole" placeholder="e.g., Business Analyst – Fresher, Data Analyst" />
+          </div>
+
+          <div class="field">
+            <label for="jds">Job Descriptions (paste multiple JDs here)</label>
+            <textarea id="jds"
+              placeholder="Paste at least 2 JDs (suggested ~20). Put a blank line between each JD for clarity."></textarea>
+            <div class="hint">
+              The tool will treat each JD separately for counting (a keyword repeated many times in the same JD counts as 1).
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="analyzeBtn" onclick="analyze()">
+            <span class="dot"></span>
+            Analyze with AI
+          </button>
+          <div id="status" class="status"></div>
+        </div>
+      </section>
+
+      <!-- Right: Output -->
+      <section class="card">
+        <div class="output-header">
+          <h2>Output</h2>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary" type="button" onclick="copyOutput()">Copy text</button>
+            <button class="btn btn-secondary" type="button" onclick="downloadCSV()">Download CSV</button>
+          </div>
+        </div>
+        <pre id="output">Your categorized skills with repeat counts will appear here…</pre>
+      </section>
+    </div>
+
+    <div class="tagline">
+      Use this to design your resume, LinkedIn keywords, and learning roadmap from real job market demand.
+    </div>
+  </div>
+
+  <script type="module">
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+    const statusEl = document.getElementById("status");
+    const outputEl = document.getElementById("output");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+
+    function setStatus(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.className = "status" + (isError ? " error" : "");
+    }
+
+    // Main analyze function
+    window.analyze = async function () {
+      const apiKey = document.getElementById("apiKey").value.trim();
+      const jobRole = document.getElementById("jobRole").value.trim();
+      const jds = document.getElementById("jds").value.trim();
+
+      if (!apiKey || !jobRole || !jds) {
+        setStatus("Please fill in the API key, job profile, and job descriptions.", true);
+        return;
+      }
+
+      setStatus("Analyzing job descriptions with Gemini…");
+      outputEl.textContent = "";
+      analyzeBtn.disabled = true;
+
+      const prompt = `
+You are helping a job seeker analyze job descriptions for the role: "${jobRole}".
+
+The user has pasted multiple job descriptions (JDs). Follow these rules:
+
+1) COUNTING RULE:
+   - Treat each JD separately.
+   - If a keyword or phrase appears multiple times within the SAME JD, count it as 1 for that JD.
+   - The final count for a keyword is: in how many different JDs it appears at least once.
+   - Example:
+     - JD1: "Power BI, Power BI dashboards" → Power BI count for JD1 is 1.
+     - JD2: "Power BI" → now total count is 2.
+     - JD3: no Power BI → total stays 2.
+
+2) CATEGORIZATION:
+   Extract important recurring keywords and group them into these categories:
+   - KEYWORDS (general or mixed items)
+   - HARD SKILLS
+   - SOFT SKILLS
+   - METHODS / METHODOLOGIES
+   - TECHNIQUES
+   - TOOLS
+   - TECHNOLOGIES
+   - PROGRAMMING LANGUAGES
+   - DOMAIN / INDUSTRY KEYWORDS
+
+   Each keyword should go into ONE primary category.
+
+3) PRIORITIZATION:
+   - Focus on recurring skills across multiple JDs.
+   - You may skip or de-prioritize skills that appear in only 1 JD.
+   - Merge obvious duplicates (singular/plural or very close synonyms).
+
+4) OUTPUT FORMAT (VERY IMPORTANT):
+   - Plain text only.
+   - No JSON. No code fences. No markdown.
+   - Use these headings in ALL CAPS exactly as written (include a heading only if you have at least 1 item there):
+     KEYWORDS
+     HARD SKILLS
+     SOFT SKILLS
+     METHODS / METHODOLOGIES
+     TECHNIQUES
+     TOOLS
+     TECHNOLOGIES
+     PROGRAMMING LANGUAGES
+     DOMAIN / INDUSTRY KEYWORDS
+   - Under each heading, list one item per line with an approximate JD-level count:
+     - Item name (Count)
+   - Example:
+
+   HARD SKILLS
+   - Data Analytics (7)
+   - Requirements Gathering (4)
+
+   TOOLS
+   - Microsoft Excel (8)
+   - JIRA (5)
+
+Now analyze these combined job descriptions and produce output ONLY in the format described:
+
+"""${jds}"""
+`;
+
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+
+        if (!text || !text.trim()) {
+          setStatus("Gemini responded, but no text was returned.", true);
+          outputEl.textContent = "(Empty response)";
+          analyzeBtn.disabled = false;
+          return;
+        }
+
+        outputEl.textContent = text.trim();
+        setStatus("Done. Review the categories and use Download CSV if needed.");
+      } catch (err) {
+        console.error(err);
+        setStatus("Gemini API error. See details in the output panel.", true);
+        outputEl.textContent = String(err);
+      } finally {
+        analyzeBtn.disabled = false;
+      }
+    };
+
+    // Copy output text
+    window.copyOutput = function () {
+      const text = outputEl.textContent;
+      if (!text || text.startsWith("Your categorized skills")) return;
+      navigator.clipboard.writeText(text).then(
+        () => setStatus("Output copied to clipboard."),
+        () => setStatus("Could not copy to clipboard.", true)
+      );
+    };
+
+    // Download CSV (Excel-friendly)
+    window.downloadCSV = function () {
+      const text = outputEl.textContent;
+      if (!text || text.startsWith("Your categorized skills")) return;
+
+      const lines = text.split("\n");
+      let currentCategory = "";
+      const rows = [["Category", "Keyword", "Count"]];
+
+      for (let rawLine of lines) {
+        let line = rawLine.trim();
+        if (!line) continue;
+
+        // Category heading: non-empty, not starting with "-"
+        if (!line.startsWith("-")) {
+          currentCategory = line;
+          continue;
+        }
+
+        // Bullet line: "- Something (3)"
+        // Allow missing count: "- Something"
+        let match = line.match(/-\s*(.+?)\s*\((\d+)\)\s*$/);
+        let keyword = "";
+        let count = "";
+
+        if (match) {
+          keyword = match[1].trim();
+          count = match[2].trim();
+        } else {
+          // no count format: "- Something"
+          keyword = line.replace(/^-\s*/, "").trim();
+        }
+
+        if (!keyword) continue;
+        rows.push([currentCategory, keyword, count]);
+      }
+
+      if (rows.length === 1) {
+        setStatus("No items detected to export. Make sure output has bullet lines.", true);
+        return;
+      }
+
+      const csv = rows
+        .map(row =>
+          row
+            .map(cell => `"${String(cell).replace(/"/g, '""')}"`)
+            .join(",")
+        )
+        .join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "jd_keywords_output.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setStatus("CSV downloaded successfully.");
+    };
+  </script>
+</body>
+</html>
